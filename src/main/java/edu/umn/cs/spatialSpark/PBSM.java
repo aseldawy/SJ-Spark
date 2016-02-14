@@ -162,6 +162,22 @@ public class PBSM {
             }
             return results;
         };
+
+        JavaSparkContext spark = new JavaSparkContext("local", "JavaLogQuery");
+        String[] inputFiles = { "rects4.txt", "rects5.txt" };
+
+        JavaPairRDD<Integer, RectangleID> rects1 = spark.textFile(inputFiles[0]).map(parser)
+                .flatMapToPair(gridAssignment);
+        JavaPairRDD<Integer, RectangleID> rects2 = spark.textFile(inputFiles[1]).map(parser)
+                .flatMapToPair(gridAssignment);
+
+        long t1 = System.currentTimeMillis();
+        JavaRDD<Tuple2<RectangleID, RectangleID>> joinResults = rects1.cogroup(rects2).mapPartitions(gridPartitioner);
+        joinResults.saveAsTextFile("results45_actual.txt");
+        long t2 = System.currentTimeMillis();
+
+        System.out.printf("Finished spatial join in %f seconds\n", (t2 - t1) / 1000.0);
+        spark.close();
     }
 
 }
